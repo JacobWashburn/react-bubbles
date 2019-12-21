@@ -1,5 +1,7 @@
 import React, {useState} from "react";
 import {axiosWithAuth} from '../Utils/axiosWithAuth';
+import axios from 'axios';
+import RandomWords from 'random-words'
 
 const initialColor = {
     color: "",
@@ -10,7 +12,6 @@ const ColorList = ({colors, updateColors}) => {
     const [editing, setEditing] = useState(false);
     const [colorToEdit, setColorToEdit] = useState(initialColor);
     const [colorToAdd, setColorToAdd] = useState(initialColor);
-    console.log(colorToAdd)
 
     const editColor = color => {
         setEditing(true);
@@ -46,39 +47,42 @@ const ColorList = ({colors, updateColors}) => {
     };
 
     const addColor = e => {
-      e.preventDefault();
-      axiosWithAuth()
-          .post('/colors/',colorToAdd)
-          .then(res => {
-            console.log('add color res',res)
-            updateColors(res.data)
-            setColorToAdd(initialColor)
-          })
+        e.preventDefault();
+        axiosWithAuth()
+            .post('/colors/', colorToAdd)
+            .then(res => {
+                console.log('add color res', res);
+                updateColors(res.data);
+                setColorToAdd(initialColor);
+            });
+    };
+
+    const addRandomColor = e => {
+        e.preventDefault();
+        axios.get('http://www.colr.org/json/color/random ')
+            .then(res => {
+                console.log(res);
+                const newColor = res.data.colors[0].hex
+                console.log({newColor})
+                const newColorObject = {
+                    color: RandomWords(),
+                    code:{
+                        hex:`#${newColor}`
+                    }
+                };
+                console.log({newColorObject})
+                axiosWithAuth()
+                    .post('/colors', newColorObject)
+                    .then(res => {
+                        console.log('add random color res', res);
+                        updateColors(res.data);
+                    });
+            });
     };
 
     return (
         <div className='colors-wrap'>
             <p>colors</p>
-            <ul>
-                {colors.map(color => (
-                    <li key={color.color} onClick={() => editColor(color)}>
-            <span>
-              <span className='delete' onClick={e => {
-                  e.stopPropagation();
-                  deleteColor(color);
-              }
-              }>
-                  x
-              </span>{" "}
-                {color.color}
-            </span>
-                        <div
-                            className='color-box'
-                            style={{backgroundColor: color.code.hex}}
-                        />
-                    </li>
-                ))}
-            </ul>
             {editing && (
                 <form onSubmit={saveEdit}>
                     <legend>edit color</legend>
@@ -133,9 +137,34 @@ const ColorList = ({colors, updateColors}) => {
                     />
                 </label>
                 <div className='button-row'>
-                    <button type='submit'>save</button>
+                    <button type='submit'>add</button>
+                    <button onClick={e => {
+                        addRandomColor(e);
+                    }}>add a random color
+                    </button>
                 </div>
             </form>)}
+            <ul>
+                {colors.map(color => (
+                    <li key={color.color} onClick={() => editColor(color)}>
+            <span>
+              <span className='delete' onClick={e => {
+                  e.stopPropagation();
+                  deleteColor(color);
+              }
+              }>
+                  x
+              </span>{" "}
+                {color.color}
+            </span>
+                        <div
+                            className='color-box'
+                            style={{backgroundColor: color.code.hex}}
+                        />
+                    </li>
+                ))}
+            </ul>
+
 
             <div className='spacer'/>
         </div>
